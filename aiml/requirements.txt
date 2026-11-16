@@ -1,0 +1,6 @@
+google-genai
+python-dotenv
+pytest
+PyMuPDF
+langchain-text-splitters
+qdrant-client
