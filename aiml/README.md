@@ -383,3 +383,44 @@ Run the report tests:
 ```bash
 python -m pytest tests/test_report_generator.py -v
 ```
+
+## Correction suggestions
+
+[`app/suggestions/suggestion_engine.py`](./app/suggestions/suggestion_engine.py)
+generates non-destructive corrections for evidence-backed compliance
+findings. It accepts the original content, findings, and retrieved guideline
+context, then asks Gemini for structured suggestions.
+
+Supported rewrite modes:
+
+- `minimal_correction`: make the smallest necessary change.
+- `professional_rewrite`: improve professional wording while preserving meaning.
+- `brand_aligned_rewrite`: align wording with the supplied brand voice and
+  terminology.
+
+The original content is never overwritten. Suggestions include the original
+text, suggested text, reason, supporting rule, source evidence, and
+`requires_human_review=true`. Findings without retrieved evidence are skipped
+and reported as `insufficient_evidence`; the engine never invents citations,
+facts, disclaimers, or guaranteed compliance.
+
+Example:
+
+```python
+from app.suggestions.suggestion_engine import SuggestionEngine
+
+engine = SuggestionEngine(text_generator=generate_text)
+result = engine.generate(
+    original_content=submitted_content,
+    findings=compliance_result["findings"],
+    guideline_context=rag_result["evidence"],
+    mode="brand_aligned_rewrite",
+)
+frontend_payload = result.model_dump()
+```
+
+Run the mocked suggestion tests:
+
+```bash
+python -m pytest tests/test_suggestion_engine.py -v
+```
