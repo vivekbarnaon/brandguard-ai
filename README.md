@@ -1,207 +1,338 @@
-# BrandGuard AI
+# 🛡️ BrandGuard AI
 
-BrandGuard AI is an AI-powered brand governance platform that evaluates
-marketing and business content against an organisation's approved brand
-guidelines.
+### AI-Powered Brand Governance and Content Compliance Platform
 
-The project is being developed as a modular system with separate AI/ML,
-backend, and frontend areas. The current implementation focuses on the
-AI/ML foundation and is ready for backend API integration.
+BrandGuard AI is an AI-powered brand governance platform designed to help organisations maintain consistent brand identity, messaging, tone, and communication standards across their content.
 
-## What the system does
+It uses **Generative AI, Retrieval-Augmented Generation (RAG), and semantic search** to analyse content against an organisation's approved brand guidelines, identify potential violations, provide evidence-based explanations, and suggest corrections before publication.
 
-BrandGuard AI is designed to:
+Our goal is to make brand compliance smarter, faster, and more reliable while keeping final approval under human control.
 
-1. Accept brand guideline documents.
-2. Extract text from PDF files while preserving page numbers.
-3. Split extracted content into searchable chunks.
-4. Generate Gemini embeddings for each chunk.
-5. Store embeddings and source metadata in Qdrant.
-6. Retrieve organisation-specific guideline evidence.
-7. Analyse submitted content with a grounded Gemini RAG pipeline.
-8. Produce evidence-linked compliance findings and structured reports.
+---
 
-The system does not make an irreversible legal or business approval decision.
-Human reviewers retain final approval authority.
+## 📌 Problem Statement
 
-## Current project structure
+Organisations produce large amounts of content across websites, social media, marketing campaigns, advertisements, product descriptions, and other communication channels.
+
+Maintaining consistent brand identity across all these channels is challenging.
+
+Traditional brand compliance processes often depend on manual reviews, which can be:
+
+- Time-consuming and difficult to scale.
+- Inconsistent across different reviewers and teams.
+- Prone to missing incorrect terminology or messaging.
+- Inefficient when checking content against lengthy brand guidelines.
+- Difficult to track when content goes through multiple revisions.
+
+Additionally, generic AI writing tools may generate content that sounds professional but does not necessarily follow an organisation's approved brand guidelines.
+
+**The core problem:** Organisations need an intelligent system that can automatically evaluate content against their own approved brand rules and help creators correct issues before publication.
+
+---
+
+## 💡 Proposed Solution
+
+BrandGuard AI provides an intelligent brand compliance checking system powered by Generative AI and Retrieval-Augmented Generation.
+
+Organisations can upload their official brand guidelines and approved documents. The platform processes these documents, converts them into searchable knowledge, and uses that knowledge to evaluate submitted content.
+
+When a creator submits content, BrandGuard AI:
+
+1. Understands the submitted content.
+2. Retrieves relevant rules from the organisation's approved brand guidelines.
+3. Analyses the content using Google Gemini.
+4. Identifies potential brand compliance violations.
+5. Provides explanations supported by guideline evidence.
+6. Generates AI-powered correction suggestions.
+7. Produces a structured compliance report for human review.
+
+The platform does not replace human decision-making. Final content approval remains with authorised reviewers.
+
+---
+
+## ✨ Key Features
+
+### 1. Brand Guideline Management
+- Upload organisation-specific brand guideline documents.
+- Extract and process guideline information from PDF files.
+- Convert documents into searchable knowledge.
+- Maintain document and page-level references.
+
+### 2. AI-Powered Brand Compliance Analysis
+- Analyse submitted marketing and business content.
+- Detect brand voice and tone inconsistencies.
+- Identify incorrect or prohibited terminology.
+- Detect unsupported claims.
+- Identify potential product description inaccuracies.
+- Check required disclaimers and messaging rules.
+
+### 3. Retrieval-Augmented Generation (RAG)
+- Retrieve relevant brand rules using semantic search.
+- Use organisation-specific guideline context.
+- Generate responses grounded in retrieved evidence.
+- Reduce unsupported AI-generated conclusions.
+
+### 4. Evidence-Based Compliance Reports
+- Display identified violations.
+- Categorise findings by severity.
+- Explain why content may violate a brand rule.
+- Reference relevant guideline documents and pages.
+- Generate a compliance score and overall status.
+
+### 5. AI-Powered Correction Suggestions
+- Suggest improved versions of problematic content.
+- Preserve the original meaning wherever possible.
+- Provide brand-aligned rewriting options.
+- Explain why a correction is recommended.
+- Keep original content unchanged until a human accepts a suggestion.
+
+### 6. Human-in-the-Loop Approval
+- Content creators review AI-generated suggestions.
+- Managers can request revisions and provide comments.
+- Authorised brand reviewers make the final approval decision.
+- Approval and revision history can be maintained by the backend workflow.
+
+---
+
+## 🔄 How BrandGuard AI Works
+
+```text
+Organisation Uploads Brand Guidelines
+                 |
+                 v
+       PDF Document Processing
+                 |
+                 v
+           Text Extraction
+                 |
+                 v
+          Text Chunking
+                 |
+                 v
+        Gemini Embeddings
+                 |
+                 v
+       Qdrant Vector Database
+                 |
+                 |
+       Creator Submits Content
+                 |
+                 v
+         RAG Retrieval
+                 |
+                 v
+       Relevant Brand Rules
+                 |
+                 v
+        Gemini AI Analysis
+                 |
+                 v
+      Compliance Detection
+                 |
+                 v
+       Structured Report
+                 |
+                 v
+       AI Correction Suggestions
+                 |
+                 v
+          Human Review
+                 |
+                 v
+       Final Approval Decision
+```
+
+---
+
+## 🧠 AI/ML Architecture
+
+BrandGuard AI uses a Retrieval-Augmented Generation architecture.
+
+### RAG Pipeline
+
+**Step 1 — Document Processing**
+
+Brand guideline PDFs are processed to extract meaningful text and preserve document references.
+
+**Step 2 — Text Chunking**
+
+Extracted text is divided into smaller, meaningful chunks to improve retrieval accuracy.
+
+**Step 3 — Embedding Generation**
+
+Text chunks are converted into numerical vector representations using a supported Gemini embedding model.
+
+**Step 4 — Vector Storage**
+
+Generated embeddings and associated metadata are stored in Qdrant.
+
+**Step 5 — Semantic Retrieval**
+
+When content is submitted, the system searches for relevant brand guideline chunks using semantic similarity.
+
+**Step 6 — AI Analysis**
+
+Retrieved guidelines and submitted content are provided to Google Gemini for contextual analysis.
+
+**Step 7 — Report Generation**
+
+The system generates structured compliance findings, evidence references, and correction suggestions.
+
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technology |
+|---|---|
+| Frontend | Next.js, React.js |
+| Backend | Python, FastAPI |
+| AI/LLM | Google Gemini API |
+| RAG Framework | LangChain |
+| Vector Database | Qdrant |
+| Embeddings | Gemini Embedding Model |
+| Database | PostgreSQL |
+| Authentication | Supabase Auth |
+| File Storage | Supabase Storage |
+| Version Control | Git and GitHub |
+
+---
+
+## 🏗️ Project Structure
 
 ```text
 brandguard-ai/
+│
+├── frontend/
+│   └── Next.js application
+│
+├── backend/
+│   ├── app/
+│   │   ├── routes/
+│   │   ├── controllers/
+│   │   ├── services/
+│   │   ├── models/
+│   │   └── main.py
+│   │
+│   └── requirements.txt
+│
 ├── aiml/
 │   ├── app/
-│   │   ├── document_processor/  # PDF extraction and text cleaning
-│   │   ├── embeddings/          # Text chunking and Gemini embeddings
-│   │   ├── vector_store/        # Qdrant storage and retrieval
-│   │   ├── rag/                 # Grounded retrieval-augmented generation
-│   │   ├── compliance/          # Compliance analysis and reports
-│   │   └── suggestions/         # Future correction suggestions
-│   ├── tests/                   # AI/ML automated tests
-│   ├── data/                    # Local development documents
+│   │   ├── document_processor/
+│   │   ├── embeddings/
+│   │   ├── vector_store/
+│   │   ├── rag/
+│   │   ├── compliance/
+│   │   └── suggestions/
+│   │
+│   ├── tests/
+│   ├── data/
 │   ├── requirements.txt
 │   ├── .env.example
-│   └── README.md                # AI/ML implementation details
-├── backend/                     # Backend API implementation area
-├── frontend/                    # Frontend implementation area
-└── README.md
+│   └── README.md
+│
+├── README.md
+└── .gitignore
 ```
 
-## AI/ML architecture
+---
 
-```text
-PDF upload
-  -> PDF text extraction
-  -> Text cleaning
-  -> Recursive text chunking
-  -> Gemini document embeddings
-  -> Qdrant vector storage
+## ⚙️ Installation and Setup
 
-Submitted content
-  -> Gemini query embedding
-  -> Organisation-filtered Qdrant retrieval
-  -> Grounded Gemini analysis
-  -> Evidence-linked compliance findings
-  -> Validated JSON compliance report
+### Prerequisites
+
+- Python 3.10 or compatible version supported by project dependencies.
+- Node.js and npm.
+- Git.
+- Google Gemini API key.
+- Qdrant Cloud account or local Qdrant instance.
+- PostgreSQL database.
+
+### 1. Clone the Repository
+
+```bash
+git clone YOUR_GITHUB_REPOSITORY_URL
+cd brandguard-ai
 ```
 
-## Implemented components
-
-### PDF document processing
-
-The document processor uses PyMuPDF to extract text page by page. It validates
-file paths, handles invalid and empty PDFs, and preserves page numbers for
-future evidence citations. Scanned image-only PDFs currently require a future
-OCR integration.
-
-### Chunking and embeddings
-
-LangChain's `RecursiveCharacterTextSplitter` creates chunks with a default
-size of 1,000 characters and 150 characters of overlap. Gemini's dedicated
-`gemini-embedding-001` model generates document and query embeddings.
-
-### Qdrant vector storage
-
-Qdrant stores vectors with the original text and source metadata. Retrieval
-requires an organisation identifier, which enforces tenant isolation. Point
-IDs are deterministic so repeated uploads safely upsert the same chunk.
-
-### RAG pipeline
-
-The RAG pipeline retrieves only organisation-specific evidence before asking
-Gemini to analyse submitted content. The prompt treats submitted content and
-retrieved text as untrusted data, prevents invented policies, and requires
-structured evidence references.
-
-### Compliance analysis
-
-The compliance engine evaluates:
-
-- Brand voice
-- Terminology
-- Prohibited language
-- Unsupported claims
-- Product accuracy
-- Required disclaimers
-- Messaging consistency
-- Other evidence-backed issues
-
-Findings include severity, explanation, confidence, source document, page
-number, and evidence chunk ID. Confidence is an estimated model confidence,
-not a statistically calibrated probability.
-
-### Structured reports
-
-Pydantic models validate the frontend response contract. Reports include:
-
-- Compliance score
-- Overall status
-- Total violations
-- Findings
-- Evidence
-- Suggested corrections
-- Human review requirement
-
-The score starts at 100 and applies configurable penalties for unique issues.
-It is a transparent review aid, not a legal or absolute compliance measure.
-
-## Local setup
-
-### Requirements
-
-- Python 3.9 or newer
-- A Google Gemini API key
-- A Qdrant Cloud cluster or local Qdrant instance
-
-### Install dependencies
+### 2. Setup AI/ML Environment
 
 ```bash
 cd aiml
+
+python3 -m venv venv
+
 source venv/bin/activate
-python -m pip install -r requirements.txt
+
+pip install -r requirements.txt
 ```
 
-On Windows PowerShell:
+### 3. Configure AI/ML Environment Variables
 
-```powershell
-cd aiml
-venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-```
+Create an `.env` file inside the `aiml/` directory.
 
-### Configure environment variables
+```env
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=your_supported_gemini_model
 
-Copy the example values into the local ignored `aiml/.env` file and replace
-placeholders with valid credentials:
-
-```dotenv
-GEMINI_API_KEY=your_actual_api_key
-GEMINI_MODEL=gemini-3.8-flash
-GEMINI_EMBEDDING_MODEL=gemini-embedding-001
-QDRANT_URL=your_qdrant_url
+QDRANT_URL=your_qdrant_cluster_url
 QDRANT_API_KEY=your_qdrant_api_key
 QDRANT_COLLECTION=brand_guidelines
 ```
 
-Never commit `aiml/.env`, API keys, confidential documents, virtual
-environments, or generated caches.
+Never commit your actual `.env` file or API credentials to GitHub.
 
-## Run tests
-
-Run the complete non-live AI/ML test suite:
+### 4. Setup Frontend
 
 ```bash
-cd aiml
-source venv/bin/activate
-python -m pytest \
-  tests/test_pdf_extractor.py \
-  tests/test_chunker.py \
-  tests/test_embedder.py \
-  tests/test_qdrant_client.py \
-  tests/test_vector_store.py \
-  tests/test_retriever.py \
-  tests/test_rag_pipeline.py \
-  tests/test_compliance_engine.py \
-  tests/test_report_generator.py -v
+cd ../frontend
+
+npm install
+
+npm run dev
 ```
 
-The unit tests mock external Gemini and Qdrant calls where possible, so they
-do not require API quota or insert test data into the production collection.
-The separate Gemini integration test requires a valid local API key.
+The Next.js application will normally run at:
 
-## Security and data handling
+http://localhost:3000
 
-- Credentials are loaded from environment variables.
-- API keys are excluded from Git.
-- Organisation IDs are required during retrieval.
-- Evidence is preserved instead of invented.
-- Raw uncontrolled Gemini responses are not returned to the frontend.
-- Final compliance decisions remain subject to human review.
+### 5. Setup Backend
 
-## Current scope and next steps
+Follow the backend setup instructions in the `backend/README.md` once the backend implementation is available.
 
-The AI/ML foundation through structured compliance reports is implemented.
-The top-level `backend/` directory is reserved for API endpoints and
-application orchestration, while `frontend/` is reserved for the user
-interface. OCR, correction suggestion workflows, backend APIs, frontend
-screens, authentication, and production observability can be added in later
-tasks.
+---
+
+## 👥 Team Radhe Radhe
+
+| Team Member | Responsibility |
+|---|---|
+| Satyam Kumar Singh | Frontend Development — Next.js / React.js |
+| Vivek Kumar | AI/ML Development — Gemini API, RAG, LangChain, Qdrant |
+| Udit Kumar Tiwari | Backend Development — Python, FastAPI, PostgreSQL |
+
+---
+
+## 🚀 Future Enhancements
+
+1. **Improved AI Accuracy and Explainability:** Enhance retrieval quality, evidence-linked findings, confidence indicators, and reduce false positives.
+
+2. **Multimodal Brand Compliance:** Introduce image, logo, colour, and accessibility checks to evaluate visual brand identity.
+
+3. **Advanced Governance and Analytics:** Add collaboration, approval and revision history, audit trails, and recurring violation analytics.
+
+---
+
+## 🎯 Project Vision
+
+Our vision is to help organisations maintain a consistent and trustworthy brand identity through intelligent, evidence-based, and human-controlled brand governance.
+
+**BrandGuard AI — Protecting Every Piece of Your Brand Communication.**
+
+---
+
+## 📄 Project Information
+
+- **Project Name:** BrandGuard AI
+- **Team Name:** Radhe Radhe
+- **Category:** AI / Generative AI
+- **Event:** CodeZen India 2026
+- **Primary Focus:** AI-Powered Brand Governance
