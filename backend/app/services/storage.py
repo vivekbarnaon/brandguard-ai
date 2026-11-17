@@ -22,7 +22,7 @@ async def delete_private(path: str) -> None:
     url = f"{settings.supabase_url.rstrip('/')}/storage/v1/object/remove/{settings.storage_bucket}"
     headers = {"Authorization": f"Bearer {settings.supabase_secret_key.get_secret_value()}", "apikey": settings.supabase_secret_key.get_secret_value()}
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.request("DELETE", url, json={"prefixes": [path]}, headers=headers)
+        response = await client.post(url, json={"prefixes": [path]}, headers=headers)
     response.raise_for_status()
 
 

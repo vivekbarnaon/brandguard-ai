@@ -29,6 +29,7 @@ export function GuidelineUploader({
 }: GuidelineUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -71,11 +72,16 @@ export function GuidelineUploader({
 
   const handleDelete = async (docId: string, name: string) => {
     if (!confirm(`Are you sure you want to remove "${name}" from brand guidelines?`)) return;
+    setUploadError(null);
+    setDeletingDocumentId(docId);
     try {
       await apiClient.deleteDocument(docId);
+      setSuccessMsg(`Removed "${name}" from brand guidelines.`);
       onRefresh();
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : "Failed to delete document.");
+    } finally {
+      setDeletingDocumentId(null);
     }
   };
 
@@ -206,10 +212,15 @@ export function GuidelineUploader({
                   {canUpload && (
                     <button
                       onClick={() => handleDelete(doc.id, doc.name)}
-                      className="p-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 border border-rose-900/40 cursor-pointer"
+                      disabled={deletingDocumentId === doc.id}
+                      className="p-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 border border-rose-900/40 cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       title="Delete guideline"
                     >
-                      <TrashIcon className="w-4 h-4" />
+                      {deletingDocumentId === doc.id ? (
+                        <RefreshCwIcon className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <TrashIcon className="w-4 h-4" />
+                      )}
                     </button>
                   )}
                 </div>
