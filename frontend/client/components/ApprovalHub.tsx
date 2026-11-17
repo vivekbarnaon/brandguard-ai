@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import {
   ApprovalDecision,
   ApprovalRecord,
+  ComplianceReport,
   ContentItem,
   Role,
 } from "../lib/types";
@@ -32,6 +33,7 @@ export function ApprovalHub({
 }: ApprovalHubProps) {
   const [filter, setFilter] = useState<string>("SUBMITTED");
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+  const [selectedReport, setSelectedReport] = useState<ComplianceReport | null>(null);
   const [comments, setComments] = useState("");
   const [history, setHistory] = useState<ApprovalRecord[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,13 +49,24 @@ export function ApprovalHub({
 
   const handleOpenReview = async (item: ContentItem) => {
     setSelectedContent(item);
+    setSelectedReport(null);
     setComments("");
     setFeedbackMsg(null);
     try {
-      const records = await apiClient.getApprovalHistory(item.id);
+      const [records, reports] = await Promise.all([
+        apiClient.getApprovalHistory(item.id),
+        apiClient.listComplianceReports(item.organisation_id),
+      ]);
       setHistory(records);
+      setSelectedReport(
+        reports.find((report) => report.content_id === item.id) || null
+      );
     } catch {
       setHistory([]);
+      setFeedbackMsg({
+        type: "error",
+        text: "Unable to load the compliance report for this submission.",
+      });
     }
   };
 
@@ -300,22 +313,17 @@ export function ApprovalHub({
 
               {/* Right: AI Compliance Findings & Reviewer Controls */}
               <div className="space-y-4">
-                {selectedContent.latest_report ? (
+                {selectedReport ? (
                   <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-white">AI Compliance Score</span>
                       <span className="text-sm font-extrabold text-indigo-400">
-                        {selectedContent.latest_report.score}/100
+                        {selectedReport.score}/100
                       </span>
                     </div>
-                    {selectedContent.latest_report.summary && (
-                      <p className="text-xs text-slate-400">
-                        {selectedContent.latest_report.summary}
-                      </p>
-                    )}
 
                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {selectedContent.latest_report.findings.map((f, i) => (
+                      {selectedReport.findings.map((f, i) => (
                         <div
                           key={i}
                           className="p-2.5 rounded bg-slate-950/80 border border-slate-800 text-[11px] space-y-1"

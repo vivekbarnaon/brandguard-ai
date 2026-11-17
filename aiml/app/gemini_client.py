@@ -1,15 +1,18 @@
 """Reusable client helpers for the Google Gemini API."""
 
 import os
+import logging
 from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 
 
 _ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(_ENV_FILE)
+logger = logging.getLogger(__name__)
 
 
 class GeminiConfigurationError(RuntimeError):
@@ -49,8 +52,10 @@ def generate_text(prompt: str, model: Optional[str] = None) -> str:
         response = client.models.generate_content(
             model=selected_model,
             contents=prompt,
+            config=types.GenerateContentConfig(response_mime_type="application/json"),
         )
     except Exception as exc:
+        logger.exception("Gemini generation failed for model %s", selected_model)
         raise GeminiGenerationError(
             f"Gemini generation failed for model '{selected_model}': {exc}"
         ) from exc

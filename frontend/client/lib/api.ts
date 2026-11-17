@@ -13,8 +13,12 @@ import {
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 const TOKEN_STORAGE_KEY = "brandguard_auth_token";
+const REFRESH_TOKEN_STORAGE_KEY = "brandguard_refresh_token";
 const ORG_STORAGE_KEY = "brandguard_active_org_id";
 
 export function getStoredToken(): string | null {
@@ -29,6 +33,82 @@ export function setStoredToken(token: string | null): void {
   } else {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
   }
+}
+
+function getStoredRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+}
+
+function setStoredRefreshToken(token: string | null): void {
+  if (typeof window === "undefined") return;
+  if (token) {
+    localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, token);
+  } else {
+    localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+  }
+}
+
+function requireSupabaseConfig(): {
+  url: string;
+  publishableKey: string;
+} {
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    throw new Error(
+      "Supabase login is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
+    );
+  }
+  return {
+    url: SUPABASE_URL.replace(/\/$/, ""),
+    publishableKey: SUPABASE_PUBLISHABLE_KEY,
+  };
+}
+
+interface SupabaseSession {
+  access_token: string;
+  refresh_token: string;
+}
+
+async function saveSession(response: Response): Promise<void> {
+  let payload: Partial<SupabaseSession> & { error_description?: string };
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error("Supabase returned an invalid authentication response.");
+  }
+
+  if (!response.ok || !payload.access_token || !payload.refresh_token) {
+    throw new Error(
+      payload.error_description || "Authentication failed. Check your email and password."
+    );
+  }
+
+  setStoredToken(payload.access_token);
+  setStoredRefreshToken(payload.refresh_token);
+}
+
+async function refreshSession(): Promise<boolean> {
+  const refreshToken = getStoredRefreshToken();
+  if (!refreshToken) return false;
+
+  const { url, publishableKey } = requireSupabaseConfig();
+  const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: {
+      apikey: publishableKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+
+  if (!response.ok) {
+    setStoredToken(null);
+    setStoredRefreshToken(null);
+    return false;
+  }
+
+  await saveSession(response);
+  return true;
 }
 
 export function getStoredOrgId(): string | null {
@@ -47,7 +127,8 @@ export function setStoredOrgId(orgId: string | null): void {
 
 async function request<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  allowRefresh = true
 ): Promise<T> {
   const token = getStoredToken();
   const headers: Record<string, string> = {
@@ -64,6 +145,13 @@ async function request<T>(
     ...options,
     headers,
   });
+
+  if (allowRefresh && response.status === 401 && getStoredRefreshToken()) {
+    const refreshed = await refreshSession();
+    if (refreshed) {
+      return request<T>(path, options, false);
+    }
+  }
 
   if (!response.ok) {
     let errorDetail = `Request failed with status ${response.status}`;
@@ -106,6 +194,46 @@ export const apiClient = {
   },
 
   // Auth & Profile
+  async signIn(email: string, password: string): Promise<void> {
+    const { url, publishableKey } = requireSupabaseConfig();
+    const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        apikey: publishableKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    await saveSession(response);
+  },
+
+  async signOut(): Promise<void> {
+    const token = getStoredToken();
+    if (token) {
+      try {
+        const { url, publishableKey } = requireSupabaseConfig();
+        await fetch(`${url}/auth/v1/logout`, {
+          method: "POST",
+          headers: {
+            apikey: publishableKey,
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } finally {
+        setStoredToken(null);
+        setStoredRefreshToken(null);
+      }
+    } else {
+      setStoredToken(null);
+      setStoredRefreshToken(null);
+    }
+  },
+
+  async restoreSession(): Promise<boolean> {
+    if (getStoredToken()) return true;
+    return refreshSession();
+  },
+
   async getMe(): Promise<UserItem> {
     return request<UserItem>("/auth/me");
   },
@@ -138,34 +266,13 @@ export const apiClient = {
   ): Promise<DocumentItem> {
     const formData = new FormData();
     formData.append("file", file);
-
-    const token = getStoredToken();
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(
-      `${API_BASE_URL}/documents/upload?organisation_id=${organisationId}`,
+    return request<DocumentItem>(
+      `/documents/upload?organisation_id=${organisationId}`,
       {
         method: "POST",
-        headers,
         body: formData,
       }
     );
-
-    if (!res.ok) {
-      let msg = "Failed to upload document";
-      try {
-        const err = await res.json();
-        if (err.detail) msg = err.detail;
-      } catch {
-        // ignore
-      }
-      throw new Error(msg);
-    }
-
-    return res.json();
   },
 
   async getDocument(documentId: string): Promise<DocumentItem> {

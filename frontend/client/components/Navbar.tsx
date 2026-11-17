@@ -11,7 +11,7 @@ import {
   SlidersIcon,
 } from "./icons";
 import { OrganisationItem, Role } from "../lib/types";
-import { apiClient, getStoredToken, setStoredToken } from "../lib/api";
+import { apiClient, getStoredToken } from "../lib/api";
 
 interface NavbarProps {
   currentTab: string;
@@ -43,11 +43,15 @@ export function Navbar({
     message: "Checking...",
   });
   const [showSettings, setShowSettings] = useState(false);
-  const [tokenInput, setTokenInput] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
 
   useEffect(() => {
-    setTokenInput(getStoredToken() || "");
+    setIsAuthenticated(Boolean(getStoredToken()));
     apiClient.checkHealth().then(setApiStatus);
     const interval = setInterval(() => {
       apiClient.checkHealth().then(setApiStatus);
@@ -55,10 +59,45 @@ export function Navbar({
     return () => clearInterval(interval);
   }, []);
 
-  const handleSaveToken = () => {
-    setStoredToken(tokenInput.trim() || null);
-    setShowSettings(false);
-    onRefreshAll();
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) {
+      setAuthError("Enter your email and password.");
+      return;
+    }
+
+    setIsAuthenticating(true);
+    setAuthError(null);
+    try {
+      await apiClient.signIn(email.trim(), password);
+      setIsAuthenticated(true);
+      setPassword("");
+      setShowSettings(false);
+      onRefreshAll();
+    } catch (error: unknown) {
+      setAuthError(
+        error instanceof Error ? error.message : "Unable to sign in."
+      );
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setIsAuthenticating(true);
+    setAuthError(null);
+    try {
+      await apiClient.signOut();
+      setIsAuthenticated(false);
+      setShowSettings(false);
+      onRefreshAll();
+    } catch (error: unknown) {
+      setAuthError(
+        error instanceof Error ? error.message : "Unable to sign out."
+      );
+    } finally {
+      setIsAuthenticating(false);
+    }
   };
 
   const handleCreateOrg = (e: React.FormEvent) => {
@@ -210,7 +249,7 @@ export function Navbar({
               <button
                 onClick={() => setShowSettings(true)}
                 className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-slate-800 cursor-pointer"
-                title="Configure Backend Connection & Auth Token"
+                title="Sign in or manage your session"
               >
                 <SlidersIcon className="w-4 h-4" />
               </button>
@@ -257,21 +296,62 @@ export function Navbar({
             </div>
 
             <div className="space-y-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-semibold text-slate-300">
-                  Supabase JWT Authentication Token
-                </label>
-                <textarea
-                  rows={3}
-                  value={tokenInput}
-                  onChange={(e) => setTokenInput(e.target.value)}
-                  placeholder="Paste your Supabase bearer token here (optional for unauthenticated mock requests)..."
-                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 font-mono text-[11px] focus:outline-none focus:border-indigo-500"
-                />
-                <p className="text-[11px] text-slate-400">
-                  Sent as `Authorization: Bearer &lt;token&gt;` on every backend API request.
-                </p>
-              </div>
+              {!isAuthenticated ? (
+                <form onSubmit={handleSignIn} className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-slate-300">Email</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      autoComplete="email"
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-slate-300">Password</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Your password"
+                      autoComplete="current-password"
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  {authError && (
+                    <p className="rounded-lg border border-rose-800/60 bg-rose-950/40 p-2.5 text-rose-300">
+                      {authError}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isAuthenticating}
+                    className="w-full px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isAuthenticating ? "Signing in..." : "Sign in"}
+                  </button>
+                </form>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-slate-300">
+                    You are signed in. Your session is refreshed automatically.
+                  </p>
+                  {authError && (
+                    <p className="rounded-lg border border-rose-800/60 bg-rose-950/40 p-2.5 text-rose-300">
+                      {authError}
+                    </p>
+                  )}
+                  <button
+                    onClick={handleSignOut}
+                    disabled={isAuthenticating}
+                    className="w-full px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-700 hover:bg-rose-600 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isAuthenticating ? "Signing out..." : "Sign out"}
+                  </button>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-slate-800 space-y-2">
                 <label className="font-semibold text-slate-300">
@@ -301,12 +381,6 @@ export function Navbar({
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white"
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleSaveToken}
-                className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
-              >
-                Save Settings
               </button>
             </div>
           </div>

@@ -57,11 +57,17 @@ Developed by **Satyam Kumar Singh (Frontend Lead)**.
 ### Running Locally
 ```bash
 cd frontend/client
+cp .env.example .env.local
+# Set the Supabase URL and publishable key in .env.local
 npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+The app provides email/password sign-in through Supabase. After signing in,
+access tokens are stored in the browser session and refreshed automatically;
+no bearer token needs to be pasted manually.
 
 ### Building for Production
 ```bash

@@ -122,7 +122,6 @@ export function ContentStudio({
         type: "success",
         text: `Analysis complete! Score: ${report.score}/100`,
       });
-      onRefresh();
     } catch (err: unknown) {
       setNotification({
         type: "error",
@@ -171,9 +170,11 @@ export function ContentStudio({
 
     const updated = body.replace(originalText, suggestedText);
     setBody(updated);
+    setCurrentReport(undefined);
+    setSuggestions(null);
     setNotification({
       type: "success",
-      text: `Applied replacement: "${suggestedText}"`,
+      text: `Applied replacement. Re-analyze the updated copy before submitting.`,
     });
   };
 

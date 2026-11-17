@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import logging
 from typing import Any, List, Optional
 import httpx
 from fastapi import FastAPI, Header, HTTPException, status
@@ -12,10 +13,11 @@ from pydantic import BaseModel, Field
 from app.compliance.compliance_engine import ComplianceEngine
 from app.compliance.report_generator import generate_report
 from app.document_processor.processor import process_pdf
-from app.embeddings.chunker import chunk_text
+from app.embeddings.chunker import chunk_document
 from app.suggestions.suggestion_engine import SuggestionEngine
 
 app = FastAPI(title="BrandGuard AI - AI/ML Microservice", version="1.0.0")
+logger = logging.getLogger(__name__)
 
 INTERNAL_TOKEN = os.getenv("AIML_INTERNAL_TOKEN")
 
@@ -81,20 +83,20 @@ async def process_document_endpoint(
         try:
             processed = process_pdf(tmp_path)
             chunks = []
-            chunk_seq = 1
-            for page in processed.get("pages", []):
-                page_chunks = chunk_text(page.get("text", ""))
-                for text_chunk in page_chunks:
-                    chunks.append(
-                        {
-                            "chunk_id": f"{payload.document_id}-chk-{chunk_seq}",
-                            "document_id": payload.document_id,
-                            "document_name": payload.storage_path.split("/")[-1],
-                            "page_number": page.get("page_number", 1),
-                            "guideline_text": text_chunk,
-                        }
-                    )
-                    chunk_seq += 1
+            for chunk_seq, chunk in enumerate(
+                chunk_document(processed, payload.document_id),
+                start=1,
+            ):
+                metadata = chunk["metadata"]
+                chunks.append(
+                    {
+                        "chunk_id": f"{payload.document_id}-chk-{chunk_seq}",
+                        "document_id": payload.document_id,
+                        "document_name": payload.storage_path.split("/")[-1],
+                        "page_number": metadata.get("page_number", 1),
+                        "guideline_text": chunk["text"],
+                    }
+                )
 
             return {"status": "processed", "chunks": chunks}
         finally:
@@ -102,6 +104,7 @@ async def process_document_endpoint(
                 os.remove(tmp_path)
 
     except Exception as exc:
+        logger.exception("AI/ML document processing failed")
         raise HTTPException(
             status_code=500, detail=f"Failed to process document: {exc}"
         ) from exc
@@ -124,6 +127,7 @@ async def analyze_endpoint(payload: ComplianceRequest):
         )
         return report.model_dump()
     except Exception as exc:
+        logger.exception("AI/ML compliance analysis failed")
         raise HTTPException(
             status_code=500, detail=f"AI/ML compliance analysis failed: {exc}"
         ) from exc
@@ -136,13 +140,14 @@ async def suggestions_endpoint(payload: SuggestionRequest):
         engine = SuggestionEngine()
         context = [c.model_dump() for c in payload.guideline_context]
         response = engine.generate(
-            submitted_content=payload.original_content,
+            original_content=payload.original_content,
             findings=payload.findings,
             guideline_context=context,
             mode=payload.mode,  # type: ignore
         )
         return response.model_dump()
     except Exception as exc:
+        logger.exception("AI/ML suggestion generation failed")
         raise HTTPException(
             status_code=500, detail=f"AI/ML suggestion generation failed: {exc}"
         ) from exc
