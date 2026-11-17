@@ -10,10 +10,10 @@ depends_on = None
 
 
 def upgrade():
-    role = postgresql.ENUM("ADMIN", "CREATOR", "MANAGER", "BRAND_REVIEWER", name="role")
-    processing = postgresql.ENUM("PENDING", "PROCESSING", "PROCESSED", "FAILED", name="processing_status")
-    content_status = postgresql.ENUM("DRAFT", "ANALYZED", "SUBMITTED", "REVISION_REQUESTED", "APPROVED", "REJECTED", name="content_status")
-    decision = postgresql.ENUM("APPROVED", "REJECTED", "REVISION_REQUESTED", name="approval_decision")
+    role = postgresql.ENUM("ADMIN", "CREATOR", "MANAGER", "BRAND_REVIEWER", name="role", create_type=False)
+    processing = postgresql.ENUM("PENDING", "PROCESSING", "PROCESSED", "FAILED", name="processing_status", create_type=False)
+    content_status = postgresql.ENUM("DRAFT", "ANALYZED", "SUBMITTED", "REVISION_REQUESTED", "APPROVED", "REJECTED", name="content_status", create_type=False)
+    decision = postgresql.ENUM("APPROVED", "REJECTED", "REVISION_REQUESTED", name="approval_decision", create_type=False)
     for enum in (role, processing, content_status, decision):
         enum.create(op.get_bind(), checkfirst=True)
     uuid = postgresql.UUID(as_uuid=True)
