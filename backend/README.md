@@ -68,5 +68,9 @@ may be exposed to the frontend or committed to Git.
   than accepting guideline context from the frontend.
 - The protected `POST /api/v1/documents/{document_id}/evidence` callback is
   available for the internal AIML processor and requires `AIML_INTERNAL_TOKEN`.
-- The remaining integration step is connecting the actual PDF processor and
-  Qdrant pipeline to this callback, followed by end-to-end tests.
+- Document uploads now call the configured `AIML_PROCESS_PATH`, pass the
+  private storage path to the internal service, and persist `PROCESSING`,
+  `PROCESSED`, or `FAILED` status.
+- The remaining integration step is implementing the matching internal AIML
+  process endpoint that runs PDF extraction, chunking, embeddings, Qdrant
+  indexing, and the evidence callback, followed by end-to-end tests.
