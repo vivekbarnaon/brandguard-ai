@@ -67,9 +67,10 @@ async def health():
 @app.post("/process-document")
 async def process_document_endpoint(
     payload: DocumentProcessRequest,
-    _: None = Header(None, alias="x-aiml-internal-token"),
+    x_aiml_internal_token: Optional[str] = Header(None, alias="x-aiml-internal-token"),
 ):
     """Download PDF from signed_url, extract pages, chunk text, and return structured evidence chunks."""
+    verify_token(x_aiml_internal_token)
     try:
         async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.get(payload.signed_url)
