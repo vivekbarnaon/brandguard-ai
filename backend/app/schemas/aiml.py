@@ -23,14 +23,17 @@ class DocumentProcessRequest(BaseModel):
     document_id: str = Field(min_length=1)
     organisation_id: str = Field(min_length=1)
     storage_path: str = Field(min_length=1)
+    signed_url: str = Field(min_length=1)
 
 
 class DocumentProcessResponse(BaseModel):
     status: Literal["processed", "failed"]
-    chunks_ingested: int = Field(ge=0)
+    chunks: list[GuidelineEvidence]
 
 
 class ComplianceRequest(BaseModel):
+    content_id: Optional[str] = None
+    organisation_id: Optional[str] = None
     original_content: str = Field(min_length=1)
     guideline_context: list[GuidelineEvidence]
 
@@ -38,6 +41,8 @@ class ComplianceRequest(BaseModel):
 class ComplianceResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    document_id: Optional[str] = None
+    organisation_id: Optional[str] = None
     overall_status: str = Field(min_length=1)
     compliance_score: int = Field(ge=0, le=100)
     total_violations: int = Field(ge=0)

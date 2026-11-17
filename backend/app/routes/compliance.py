@@ -23,6 +23,8 @@ async def analyze(content_id: UUID, user: Annotated[User, Depends(current_user)]
     chunks = list(await db.scalars(select(GuidelineChunk).where(GuidelineChunk.organisation_id == content.organisation_id)))
     result = await analyze(
         ComplianceRequest(
+            content_id=str(content.id),
+            organisation_id=str(content.organisation_id),
             original_content=content.body,
             guideline_context=[
                 {

@@ -17,7 +17,7 @@ from app.models import Document, GuidelineChunk, OrganisationMember, ProcessingS
 from app.schemas.aiml import DocumentProcessRequest, EvidenceBatch
 from app.services.audit import record
 from app.services.aiml import process_document
-from app.services.storage import delete_private, upload_private
+from app.services.storage import create_signed_url, delete_private, upload_private
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 logger = logging.getLogger(__name__)
@@ -42,19 +42,31 @@ async def upload_document(organisation_id: UUID, file: Annotated[UploadFile, Fil
         await db.commit()
         document.processing_status = ProcessingStatus.PROCESSING
         await db.commit()
+        signed_url = await create_signed_url(path)
         result = await process_document(
             DocumentProcessRequest(
                 document_id=str(document.id),
                 organisation_id=str(organisation_id),
                 storage_path=path,
+                signed_url=signed_url,
             )
         )
+        for chunk in result.chunks:
+            db.add(
+                GuidelineChunk(
+                    organisation_id=organisation_id,
+                    document_id=document.id,
+                    chunk_id=chunk.chunk_id,
+                    guideline_text=chunk.guideline_text,
+                    page_number=chunk.page_number,
+                )
+            )
         document.processing_status = ProcessingStatus.PROCESSED
         await db.commit()
         return {
             "document_id": document.id,
             "processing_status": document.processing_status,
-            "chunks_ingested": result.chunks_ingested,
+            "chunks_ingested": len(result.chunks),
         }
     except HTTPException:
         if document is not None:
