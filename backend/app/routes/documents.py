@@ -14,8 +14,9 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.dependencies.auth import current_user, internal_aiml, membership, require_roles
 from app.models import Document, GuidelineChunk, OrganisationMember, ProcessingStatus, Role, User
-from app.schemas.aiml import EvidenceBatch
+from app.schemas.aiml import DocumentProcessRequest, EvidenceBatch
 from app.services.audit import record
+from app.services.aiml import process_document
 from app.services.storage import delete_private, upload_private
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -32,13 +33,34 @@ async def upload_document(organisation_id: UUID, file: Annotated[UploadFile, Fil
     document_id = uuid.uuid4()
     safe_name = PurePosixPath(file.filename or "guidelines.pdf").name
     path = f"{organisation_id}/{document_id}/{safe_name}"
+    document = None
     try:
         await upload_private(path, data, "application/pdf")
         document = Document(id=document_id, organisation_id=organisation_id, name=safe_name, storage_path=path, uploaded_by=user.id, processing_status=ProcessingStatus.PENDING)
         db.add(document)
         await record(db, organisation_id, user.id, "document.uploaded", document.id)
         await db.commit()
-        return document
+        document.processing_status = ProcessingStatus.PROCESSING
+        await db.commit()
+        result = await process_document(
+            DocumentProcessRequest(
+                document_id=str(document.id),
+                organisation_id=str(organisation_id),
+                storage_path=path,
+            )
+        )
+        document.processing_status = ProcessingStatus.PROCESSED
+        await db.commit()
+        return {
+            "document_id": document.id,
+            "processing_status": document.processing_status,
+            "chunks_ingested": result.chunks_ingested,
+        }
+    except HTTPException:
+        if document is not None:
+            document.processing_status = ProcessingStatus.FAILED
+            await db.commit()
+        raise
     except (httpx.HTTPError, SQLAlchemyError):
         try:
             await delete_private(path)

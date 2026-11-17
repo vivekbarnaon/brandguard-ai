@@ -19,6 +19,17 @@ class EvidenceBatch(BaseModel):
     chunks: list[GuidelineEvidence] = Field(min_length=1)
 
 
+class DocumentProcessRequest(BaseModel):
+    document_id: str = Field(min_length=1)
+    organisation_id: str = Field(min_length=1)
+    storage_path: str = Field(min_length=1)
+
+
+class DocumentProcessResponse(BaseModel):
+    status: Literal["processed", "failed"]
+    chunks_ingested: int = Field(ge=0)
+
+
 class ComplianceRequest(BaseModel):
     original_content: str = Field(min_length=1)
     guideline_context: list[GuidelineEvidence]

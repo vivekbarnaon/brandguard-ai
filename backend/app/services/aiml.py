@@ -8,6 +8,8 @@ from app.core.config import get_settings
 from app.schemas.aiml import (
     ComplianceRequest,
     ComplianceResponse,
+    DocumentProcessRequest,
+    DocumentProcessResponse,
     SuggestionRequest,
     SuggestionResponse,
 )
@@ -15,9 +17,12 @@ from app.schemas.aiml import (
 
 async def call_aiml(path: str, payload: dict[str, Any]) -> dict[str, Any]:
     settings = get_settings()
+    headers = {}
+    if settings.aiml_internal_token is not None:
+        headers["x-aiml-internal-token"] = settings.aiml_internal_token.get_secret_value()
     try:
         async with httpx.AsyncClient(base_url=settings.aiml_service_url, timeout=60) as client:
-            response = await client.post(path, json=payload)
+            response = await client.post(path, json=payload, headers=headers)
             response.raise_for_status()
             result = response.json()
     except (httpx.HTTPError, ValueError) as exc:
@@ -25,6 +30,14 @@ async def call_aiml(path: str, payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(result, dict):
         raise HTTPException(status_code=502, detail="AI/ML service returned an invalid response")
     return result
+
+
+async def process_document(request: DocumentProcessRequest) -> DocumentProcessResponse:
+    result = await call_aiml(get_settings().aiml_process_path, request.model_dump())
+    try:
+        return DocumentProcessResponse.model_validate(result)
+    except ValidationError as exc:
+        raise HTTPException(status_code=502, detail="AI/ML document response failed schema validation") from exc
 
 
 async def analyze(request: ComplianceRequest) -> ComplianceResponse:
