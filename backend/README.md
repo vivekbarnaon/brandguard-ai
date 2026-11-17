@@ -49,7 +49,8 @@ The integration will be delivered in these stages:
    then validate and persist the generated report.
 4. Send suggestion requests using `original_content`, validated findings,
    `guideline_context`, and an explicit rewrite mode.
-5. Connect document processing and indexing to the upload workflow.
+5. Connect document processing and indexing through the configured internal
+   adapter.
 6. Add mocked integration tests for errors, tenant isolation, evidence
    validation, and human-review requirements.
 
@@ -71,10 +72,14 @@ may be exposed to the frontend or committed to Git.
 - Document uploads now call the configured `AIML_PROCESS_PATH`, pass the
   private storage path to the internal service, and persist `PROCESSING`,
   `PROCESSED`, or `FAILED` status.
-- The internal AIML process endpoint now runs PDF extraction, chunking,
-  embeddings, Qdrant indexing, and returns validated evidence to the backend.
-- The remaining integration step is end-to-end testing against Supabase,
-  Qdrant, and Gemini.
+- The backend adapter is responsible for transport, authentication headers,
+  timeout handling, and response validation.
+- The existing `aiml/` modules remain the AI/ML implementation source and are
+  not exposed directly to the frontend.
+- A separately deployed internal AIML runtime must provide the configured
+  processing, analysis, and suggestion paths.
+- The remaining integration step is wiring that runtime deployment and
+  testing against Supabase, Qdrant, and Gemini.
 
 The backend creates a five-minute signed Supabase Storage URL for the internal
 AIML processing adapter; the Supabase secret key is never sent to the AIML
