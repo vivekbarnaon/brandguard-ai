@@ -163,8 +163,8 @@ chunks = chunk_document(processed_document, "brand-guidelines-001")
 embedded_chunks = GeminiEmbedder().embed_chunks(chunks)
 ```
 
-Qdrant storage is intentionally not included yet. Scanned PDF OCR is also
-outside the current scope.
+Qdrant storage is included in the document-processing flow. Scanned PDF OCR is
+still outside the current scope.
 
 ## Qdrant vector store
 
@@ -204,6 +204,11 @@ qdrant.verify_connection()
 store = QdrantVectorStore(qdrant)
 point_ids = store.upsert_chunks(embedded_chunks, organization_id="org-001")
 ```
+
+The `/process-document` endpoint performs this embedding and upsert
+automatically. The backend retrieves only the top matching chunks for the
+requesting organisation through `/retrieve-guidelines`; it does not send the
+entire guideline corpus to compliance or suggestion analysis.
 
 Retrieve relevant guidelines:
 

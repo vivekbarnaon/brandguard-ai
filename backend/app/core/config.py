@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     aiml_analyze_path: str = Field(default="/analyze", alias="AIML_ANALYZE_PATH")
     aiml_suggestions_path: str = Field(default="/suggestions", alias="AIML_SUGGESTIONS_PATH")
     aiml_process_path: str = Field(default="/process-document", alias="AIML_PROCESS_PATH")
+    aiml_retrieve_path: str = Field(default="/retrieve-guidelines", alias="AIML_RETRIEVE_PATH")
     aiml_internal_token: Optional[SecretStr] = Field(default=None, alias="AIML_INTERNAL_TOKEN")
     storage_bucket: str = Field(default="brand-guidelines", alias="STORAGE_BUCKET")
     max_upload_bytes: int = Field(default=10 * 1024 * 1024, alias="MAX_UPLOAD_BYTES")

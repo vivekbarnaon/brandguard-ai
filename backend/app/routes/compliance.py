@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.dependencies.auth import current_user
-from app.models import ComplianceReport, Content, GuidelineChunk, OrganisationMember, User
+from app.models import ComplianceReport, Content, OrganisationMember, User
 from app.schemas.aiml import ComplianceRequest
 from app.services import aiml
 from app.services.audit import record
@@ -20,21 +20,16 @@ async def analyze(content_id: UUID, user: Annotated[User, Depends(current_user)]
     content = await db.get(Content, content_id)
     if content is None or await db.scalar(select(OrganisationMember).where(OrganisationMember.organisation_id == content.organisation_id, OrganisationMember.user_id == user.id)) is None:
         raise HTTPException(status_code=404, detail="Content not found")
-    chunks = list(await db.scalars(select(GuidelineChunk).where(GuidelineChunk.organisation_id == content.organisation_id)))
+    evidence = await aiml.retrieve_guidelines(
+        content.body,
+        str(content.organisation_id),
+    )
     result = await aiml.analyze(
         ComplianceRequest(
             content_id=str(content.id),
             organisation_id=str(content.organisation_id),
             original_content=content.body,
-            guideline_context=[
-                {
-                    "chunk_id": chunk.chunk_id,
-                    "document_id": str(chunk.document_id),
-                    "guideline_text": chunk.guideline_text,
-                    "page_number": chunk.page_number,
-                }
-                for chunk in chunks
-            ],
+            guideline_context=evidence,
         )
     )
     try:

@@ -40,6 +40,25 @@ async def process_document(request: DocumentProcessRequest) -> DocumentProcessRe
         raise HTTPException(status_code=502, detail="AI/ML document response failed schema validation") from exc
 
 
+async def retrieve_guidelines(
+    query: str,
+    organisation_id: str,
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    result = await call_aiml(
+        get_settings().aiml_retrieve_path,
+        {
+            "query": query,
+            "organisation_id": organisation_id,
+            "limit": limit,
+        },
+    )
+    evidence = result.get("results")
+    if not isinstance(evidence, list):
+        raise HTTPException(status_code=502, detail="AI/ML retrieval response was invalid")
+    return evidence
+
+
 async def analyze(request: ComplianceRequest) -> ComplianceResponse:
     result = await call_aiml(get_settings().aiml_analyze_path, request.model_dump())
     try:

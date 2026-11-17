@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.dependencies.auth import current_user
-from app.models import ComplianceReport, Content, GuidelineChunk, User
+from app.models import ComplianceReport, Content, User
 from app.schemas.aiml import SuggestionRequest
 from app.routes.content import get_content
-from app.services.aiml import generate_suggestions
+from app.services.aiml import generate_suggestions, retrieve_guidelines
 
 router = APIRouter(prefix="/suggestions", tags=["suggestions"])
 
@@ -25,20 +25,15 @@ async def generate(content_id: UUID, user: Annotated[User, Depends(current_user)
     )
     if report is None:
         raise HTTPException(status_code=409, detail="Analyze content before generating suggestions")
-    chunks = list(await db.scalars(select(GuidelineChunk).where(GuidelineChunk.organisation_id == content.organisation_id)))
+    evidence = await retrieve_guidelines(
+        content.body,
+        str(content.organisation_id),
+    )
     return await generate_suggestions(
         SuggestionRequest(
             original_content=content.body,
             findings=report.findings,
-            guideline_context=[
-                {
-                    "chunk_id": chunk.chunk_id,
-                    "document_id": str(chunk.document_id),
-                    "guideline_text": chunk.guideline_text,
-                    "page_number": chunk.page_number,
-                }
-                for chunk in chunks
-            ],
+            guideline_context=evidence,
         )
     )
 

@@ -78,8 +78,11 @@ may be exposed to the frontend or committed to Git.
   not exposed directly to the frontend.
 - A separately deployed internal AIML runtime must provide the configured
   processing, analysis, and suggestion paths.
-- The remaining integration step is wiring that runtime deployment and
-  testing against Supabase, Qdrant, and Gemini.
+- Document ingestion now embeds chunks and upserts them into Qdrant through
+  the AIML runtime, while compliance and suggestion requests retrieve
+  organisation-scoped semantic matches from Qdrant.
+- The runtime deployment still needs valid Supabase, Qdrant, and Gemini
+  environment variables in the environments where it runs.
 
 The backend creates a five-minute signed Supabase Storage URL for the internal
 AIML processing adapter; the Supabase secret key is never sent to the AIML
