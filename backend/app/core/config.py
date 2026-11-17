@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     aiml_service_url: str = Field(default="http://localhost:8001", alias="AIML_SERVICE_URL")
     aiml_analyze_path: str = Field(default="/analyze", alias="AIML_ANALYZE_PATH")
     aiml_suggestions_path: str = Field(default="/suggestions", alias="AIML_SUGGESTIONS_PATH")
+    aiml_internal_token: Optional[SecretStr] = Field(default=None, alias="AIML_INTERNAL_TOKEN")
     storage_bucket: str = Field(default="brand-guidelines", alias="STORAGE_BUCKET")
     max_upload_bytes: int = Field(default=10 * 1024 * 1024, alias="MAX_UPLOAD_BYTES")
 

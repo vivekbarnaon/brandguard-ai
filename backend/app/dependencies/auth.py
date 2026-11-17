@@ -1,12 +1,15 @@
-import uuid
-from typing import Annotated, Any
+from __future__ import annotations
 
-from fastapi import Depends, HTTPException, status
+import uuid
+from typing import Annotated, Any, Optional
+
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.config import get_settings
 from app.core.security import verify_token
 from app.models import OrganisationMember, Role, User
 
@@ -56,4 +59,10 @@ async def membership(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganisationMember:
     return await require_roles()(organisation_id=organisation_id, user=user, db=db)
+
+
+async def internal_aiml(x_aiml_internal_token: Annotated[Optional[str], Header()] = None) -> None:
+    configured = get_settings().aiml_internal_token
+    if configured is None or x_aiml_internal_token != configured.get_secret_value():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="AIML internal access denied")
 

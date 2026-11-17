@@ -2,14 +2,15 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
 from app.core.database import get_db
 from app.dependencies.auth import current_user
-from app.models import Content, User
+from app.models import ComplianceReport, Content, GuidelineChunk, User
+from app.schemas.aiml import SuggestionRequest
 from app.routes.content import get_content
-from app.services.aiml import call_aiml
+from app.services.aiml import generate_suggestions
 
 router = APIRouter(prefix="/suggestions", tags=["suggestions"])
 
@@ -17,5 +18,27 @@ router = APIRouter(prefix="/suggestions", tags=["suggestions"])
 @router.post("/generate")
 async def generate(content_id: UUID, user: Annotated[User, Depends(current_user)], db: Annotated[AsyncSession, Depends(get_db)]):
     content = await get_content(content_id, db, user.id)
-    return await call_aiml(get_settings().aiml_suggestions_path, {"content_id": str(content.id), "organisation_id": str(content.organisation_id), "content": content.body})
+    report = await db.scalar(
+        select(ComplianceReport)
+        .where(ComplianceReport.content_id == content.id)
+        .order_by(ComplianceReport.created_at.desc())
+    )
+    if report is None:
+        raise HTTPException(status_code=409, detail="Analyze content before generating suggestions")
+    chunks = list(await db.scalars(select(GuidelineChunk).where(GuidelineChunk.organisation_id == content.organisation_id)))
+    return await generate_suggestions(
+        SuggestionRequest(
+            original_content=content.body,
+            findings=report.findings,
+            guideline_context=[
+                {
+                    "chunk_id": chunk.chunk_id,
+                    "document_id": str(chunk.document_id),
+                    "guideline_text": chunk.guideline_text,
+                    "page_number": chunk.page_number,
+                }
+                for chunk in chunks
+            ],
+        )
+    )
 
