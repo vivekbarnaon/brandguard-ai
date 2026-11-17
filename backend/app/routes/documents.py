@@ -12,8 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.dependencies.auth import current_user, membership, require_roles
-from app.models import Document, OrganisationMember, ProcessingStatus, Role, User
+from app.dependencies.auth import current_user, internal_aiml, membership, require_roles
+from app.models import Document, GuidelineChunk, OrganisationMember, ProcessingStatus, Role, User
+from app.schemas.aiml import EvidenceBatch
 from app.services.audit import record
 from app.services.storage import delete_private, upload_private
 
@@ -60,6 +61,25 @@ async def get_document(document_id: UUID, user: Annotated[User, Depends(current_
     if member is None:
         raise HTTPException(status_code=403, detail="Document is outside your organisation")
     return document
+
+
+@router.post("/{document_id}/evidence", dependencies=[Depends(internal_aiml)])
+async def ingest_evidence(document_id: UUID, payload: EvidenceBatch, db: Annotated[AsyncSession, Depends(get_db)]):
+    document = await db.get(Document, document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+    for chunk in payload.chunks:
+        db.add(
+            GuidelineChunk(
+                organisation_id=document.organisation_id,
+                document_id=document.id,
+                chunk_id=chunk.chunk_id,
+                guideline_text=chunk.guideline_text,
+                page_number=chunk.page_number,
+            )
+        )
+    await db.commit()
+    return {"document_id": document.id, "chunks_ingested": len(payload.chunks)}
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

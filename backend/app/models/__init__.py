@@ -7,6 +7,7 @@ from app.models.entities import (
     Content,
     ContentStatus,
     Document,
+    GuidelineChunk,
     Organisation,
     OrganisationMember,
     ProcessingStatus,
@@ -14,4 +15,4 @@ from app.models.entities import (
     User,
 )
 
-__all__ = ["Base", "ApprovalDecision", "ApprovalRecord", "AuditLog", "ComplianceReport", "Content", "ContentStatus", "Document", "Organisation", "OrganisationMember", "ProcessingStatus", "Role", "User"]
+__all__ = ["Base", "ApprovalDecision", "ApprovalRecord", "AuditLog", "ComplianceReport", "Content", "ContentStatus", "Document", "GuidelineChunk", "Organisation", "OrganisationMember", "ProcessingStatus", "Role", "User"]

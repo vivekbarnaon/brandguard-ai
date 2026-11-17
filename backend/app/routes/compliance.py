@@ -5,11 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
 from app.core.database import get_db
 from app.dependencies.auth import current_user
-from app.models import ComplianceReport, Content, OrganisationMember, User
-from app.services.aiml import call_aiml
+from app.models import ComplianceReport, Content, GuidelineChunk, OrganisationMember, User
+from app.schemas.aiml import ComplianceRequest
+from app.services.aiml import analyze
 from app.services.audit import record
 
 router = APIRouter(prefix="/compliance", tags=["compliance"])
@@ -20,16 +20,25 @@ async def analyze(content_id: UUID, user: Annotated[User, Depends(current_user)]
     content = await db.get(Content, content_id)
     if content is None or await db.scalar(select(OrganisationMember).where(OrganisationMember.organisation_id == content.organisation_id, OrganisationMember.user_id == user.id)) is None:
         raise HTTPException(status_code=404, detail="Content not found")
-    result = await call_aiml(get_settings().aiml_analyze_path, {"content_id": str(content.id), "organisation_id": str(content.organisation_id), "title": content.title, "content": content.body})
+    chunks = list(await db.scalars(select(GuidelineChunk).where(GuidelineChunk.organisation_id == content.organisation_id)))
+    result = await analyze(
+        ComplianceRequest(
+            original_content=content.body,
+            guideline_context=[
+                {
+                    "chunk_id": chunk.chunk_id,
+                    "document_id": str(chunk.document_id),
+                    "guideline_text": chunk.guideline_text,
+                    "page_number": chunk.page_number,
+                }
+                for chunk in chunks
+            ],
+        )
+    )
     try:
-        score = float(result["score"])
-        overall_status = str(result["overall_status"])
-        findings = result["findings"]
-        if not 0 <= score <= 100 or not isinstance(findings, list):
-            raise ValueError
-    except (KeyError, TypeError, ValueError) as exc:
+        report = ComplianceReport(content_id=content.id, score=result.compliance_score, overall_status=result.overall_status, findings=result.findings)
+    except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=502, detail="AI/ML response failed compliance schema validation") from exc
-    report = ComplianceReport(content_id=content.id, score=score, overall_status=overall_status, findings=findings)
     db.add(report)
     await record(db, content.organisation_id, user.id, "compliance.analyzed", report.id)
     await db.commit()

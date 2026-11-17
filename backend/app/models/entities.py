@@ -75,6 +75,17 @@ class Document(Timestamped, Base):
     uploaded_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
 
 
+class GuidelineChunk(Timestamped, Base):
+    __tablename__ = "guideline_chunks"
+    __table_args__ = (UniqueConstraint("document_id", "chunk_id"),)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organisation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organisations.id", ondelete="CASCADE"))
+    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    chunk_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    guideline_text: Mapped[str] = mapped_column(Text, nullable=False)
+    page_number: Mapped[Optional[int]] = mapped_column(Integer)
+
+
 class Content(Timestamped, Base):
     __tablename__ = "contents"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
