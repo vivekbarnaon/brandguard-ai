@@ -71,6 +71,11 @@ may be exposed to the frontend or committed to Git.
 - Document uploads now call the configured `AIML_PROCESS_PATH`, pass the
   private storage path to the internal service, and persist `PROCESSING`,
   `PROCESSED`, or `FAILED` status.
-- The remaining integration step is implementing the matching internal AIML
-  process endpoint that runs PDF extraction, chunking, embeddings, Qdrant
-  indexing, and the evidence callback, followed by end-to-end tests.
+- The internal AIML process endpoint now runs PDF extraction, chunking,
+  embeddings, Qdrant indexing, and returns validated evidence to the backend.
+- The remaining integration step is end-to-end testing against Supabase,
+  Qdrant, and Gemini.
+
+The backend creates a five-minute signed Supabase Storage URL for the internal
+AIML processing adapter; the Supabase secret key is never sent to the AIML
+runtime or exposed to the frontend.
