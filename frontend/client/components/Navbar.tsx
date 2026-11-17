@@ -25,6 +25,8 @@ interface NavbarProps {
   onCreateOrg: (name: string) => void;
   pendingCount?: number;
   onRefreshAll: () => void;
+  onSignedOut?: () => void;
+  userEmail?: string;
 }
 
 export function Navbar({
@@ -38,8 +40,11 @@ export function Navbar({
   onCreateOrg,
   pendingCount = 0,
   onRefreshAll,
+  onSignedOut,
+  userEmail = "",
 }: NavbarProps) {
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
@@ -82,6 +87,7 @@ export function Navbar({
       await apiClient.signOut();
       setIsAuthenticated(false);
       setShowSettings(false);
+      onSignedOut?.();
       onRefreshAll();
     } catch (error: unknown) {
       setAuthError(
@@ -224,14 +230,14 @@ export function Navbar({
 
               {/* Settings / Auth Button */}
               <button
-                onClick={() => setShowSettings(true)}
+                onClick={() => setShowProfile(true)}
                 className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-colors cursor-pointer ${
                   isAuthenticated
                     ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20"
                     : "border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900"
                 }`}
-                title={isAuthenticated ? "Manage account" : "Sign in"}
-                aria-label={isAuthenticated ? "Manage account" : "Sign in"}
+                title={isAuthenticated ? "View profile" : "Sign in"}
+                aria-label={isAuthenticated ? "View profile" : "Sign in"}
               >
                 <UserIcon className="w-5 h-5" />
               </button>
@@ -259,6 +265,76 @@ export function Navbar({
           </div>
         </div>
       </header>
+
+      {showProfile && isAuthenticated && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+          <div className="glass-panel w-full max-w-md rounded-3xl border border-slate-700 p-6 shadow-2xl shadow-black/50">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-400 to-cyan-300 text-xl font-bold text-slate-950">
+                  {(userEmail || "U").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-300">
+                    Your profile
+                  </p>
+                  <h3 className="mt-1 text-lg font-bold text-white">
+                    {userEmail || "BrandGuard User"}
+                  </h3>
+                  <p className="mt-1 text-xs text-emerald-300">Active session</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowProfile(false)}
+                className="rounded-lg px-2.5 py-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+                aria-label="Close profile"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="glass-card rounded-2xl p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Workspace role</p>
+                <p className="mt-2 text-sm font-bold text-indigo-200">
+                  {roles.find((role) => role.role === currentRole)?.label}
+                </p>
+              </div>
+              <div className="glass-card rounded-2xl p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Organisation</p>
+                <p className="mt-2 truncate text-sm font-bold text-white">
+                  {activeOrg?.name || "Not selected"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
+              <p className="text-xs font-semibold text-emerald-200">Workspace access</p>
+              <p className="mt-1 text-xs leading-5 text-slate-400">
+                Your guidelines, content studio, compliance reports, and approvals are available.
+              </p>
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => {
+                  setShowProfile(false);
+                  setShowSettings(true);
+                }}
+                className="flex-1 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800"
+              >
+                Account settings
+              </button>
+              <button
+                onClick={() => setShowProfile(false)}
+                className="flex-1 rounded-xl bg-indigo-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-400"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Settings / Auth Modal */}
       {showSettings && (

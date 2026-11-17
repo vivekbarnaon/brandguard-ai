@@ -207,6 +207,46 @@ export const apiClient = {
     await saveSession(response);
   },
 
+  async signUp(email: string, password: string): Promise<boolean> {
+    const { url, publishableKey } = requireSupabaseConfig();
+    const response = await fetch(`${url}/auth/v1/signup`, {
+      method: "POST",
+      headers: {
+        apikey: publishableKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    let payload: Partial<SupabaseSession> & {
+      error_description?: string;
+      msg?: string;
+      message?: string;
+    };
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error("Supabase returned an invalid signup response.");
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        payload.error_description ||
+          payload.msg ||
+          payload.message ||
+          "Unable to create your account."
+      );
+    }
+
+    if (payload.access_token && payload.refresh_token) {
+      setStoredToken(payload.access_token);
+      setStoredRefreshToken(payload.refresh_token);
+      return true;
+    }
+
+    return false;
+  },
+
   async signOut(): Promise<void> {
     const token = getStoredToken();
     if (token) {

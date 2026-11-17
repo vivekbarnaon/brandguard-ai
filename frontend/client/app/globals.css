@@ -72,3 +72,104 @@ body {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 20px -5px rgba(99, 102, 241, 0.2);
 }
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes hero-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+@keyframes hero-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes hero-scan {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  25%,
+  75% {
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(260px);
+    opacity: 0;
+  }
+}
+
+@keyframes hero-orbit {
+  from {
+    transform: rotate(0deg) translateX(12px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(12px) rotate(-360deg);
+  }
+}
+
+.hero-fade-up {
+  animation: hero-fade-up 600ms ease-out both;
+}
+
+.hero-float {
+  animation: hero-float 7s ease-in-out 800ms infinite;
+}
+
+.hero-glow {
+  animation: hero-glow 5s ease-in-out infinite;
+}
+
+.hero-gradient {
+  background-size: 200% 200%;
+  animation: hero-gradient-shift 8s ease-in-out infinite;
+}
+
+.hero-scan-line {
+  animation: hero-scan 4.5s ease-in-out 1.2s infinite;
+}
+
+.hero-orbit {
+  animation: hero-orbit 8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-fade-up,
+  .hero-float,
+  .hero-glow,
+  .hero-gradient,
+  .hero-scan-line,
+  .hero-orbit {
+    animation: none;
+  }
+}

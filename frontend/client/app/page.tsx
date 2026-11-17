@@ -6,6 +6,9 @@ import { DashboardOverview } from "../components/DashboardOverview";
 import { ContentStudio } from "../components/ContentStudio";
 import { GuidelineUploader } from "../components/GuidelineUploader";
 import { ApprovalHub } from "../components/ApprovalHub";
+import { AuthModal } from "../components/AuthModal";
+import { LandingPage } from "../components/LandingPage";
+import { ProfileCard } from "../components/ProfileCard";
 import {
   ContentItem,
   DashboardMetrics,
@@ -21,6 +24,11 @@ import {
 import { AlertTriangleIcon, BuildingIcon, RefreshCwIcon } from "../components/icons";
 
 export default function Home() {
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfileCard, setShowProfileCard] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
   const [currentTab, setCurrentTab] = useState("dashboard");
   const [currentRole, setCurrentRole] = useState<Role>("CREATOR");
   const [isLoading, setIsLoading] = useState(true);
@@ -93,7 +101,12 @@ export default function Home() {
   useEffect(() => {
     async function init() {
       setIsLoading(true);
-      await loadOrganisations();
+      const restored = await apiClient.restoreSession().catch(() => false);
+      setIsAuthenticated(restored);
+      setAuthChecked(true);
+      if (restored) {
+        await loadOrganisations();
+      }
       setIsLoading(false);
     }
     init();
@@ -131,6 +144,45 @@ export default function Home() {
     }
   };
 
+  const handleAuthenticated = (email: string) => {
+    setUserEmail(email);
+    setIsAuthenticated(true);
+    setShowAuthModal(false);
+    setShowProfileCard(true);
+    loadOrganisations();
+  };
+
+  if (!authChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LandingPage onGetStarted={() => setShowAuthModal(true)} />
+        {showAuthModal && (
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
+            onAuthenticated={handleAuthenticated}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (showProfileCard) {
+    return (
+      <ProfileCard
+        email={userEmail}
+        onContinue={() => setShowProfileCard(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
       {/* Top Navigation */}
@@ -145,6 +197,12 @@ export default function Home() {
         onCreateOrg={handleCreateOrg}
         pendingCount={metrics.pending_approvals}
         onRefreshAll={handleRefreshAll}
+        userEmail={userEmail}
+        onSignedOut={() => {
+          setIsAuthenticated(false);
+          setUserEmail("");
+          setShowProfileCard(false);
+        }}
       />
 
       {/* Main Container */}
@@ -251,13 +309,6 @@ export default function Home() {
           <p>
             &copy; 2026 BrandGuard AI &bull; Enterprise Brand Governance Platform
           </p>
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
-            <span>Next.js 16 (React 19)</span>
-            <span>&bull;</span>
-            <span>FastAPI & PostgreSQL</span>
-            <span>&bull;</span>
-            <span>Gemini RAG & Qdrant</span>
-          </div>
         </div>
       </footer>
     </div>
