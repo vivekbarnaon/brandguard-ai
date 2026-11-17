@@ -10,4 +10,3 @@ python-multipart>=0.0.20,<1
 email-validator>=2.2,<3
 pytest>=8.3,<9
 pytest-asyncio>=0.25,<1
-

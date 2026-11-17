@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.dependencies.auth import current_user
 from app.models import ComplianceReport, Content, GuidelineChunk, OrganisationMember, User
 from app.schemas.aiml import ComplianceRequest
-from app.services.aiml import analyze
+from app.services import aiml
 from app.services.audit import record
 
 router = APIRouter(prefix="/compliance", tags=["compliance"])
@@ -21,7 +21,7 @@ async def analyze(content_id: UUID, user: Annotated[User, Depends(current_user)]
     if content is None or await db.scalar(select(OrganisationMember).where(OrganisationMember.organisation_id == content.organisation_id, OrganisationMember.user_id == user.id)) is None:
         raise HTTPException(status_code=404, detail="Content not found")
     chunks = list(await db.scalars(select(GuidelineChunk).where(GuidelineChunk.organisation_id == content.organisation_id)))
-    result = await analyze(
+    result = await aiml.analyze(
         ComplianceRequest(
             content_id=str(content.id),
             organisation_id=str(content.organisation_id),
