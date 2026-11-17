@@ -9,6 +9,7 @@ import {
   LayersIcon,
   BarChartIcon,
   SlidersIcon,
+  UserIcon,
 } from "./icons";
 import { OrganisationItem, Role } from "../lib/types";
 import { apiClient, getStoredToken } from "../lib/api";
@@ -38,10 +39,6 @@ export function Navbar({
   pendingCount = 0,
   onRefreshAll,
 }: NavbarProps) {
-  const [apiStatus, setApiStatus] = useState<{ online: boolean; message?: string }>({
-    online: false,
-    message: "Checking...",
-  });
   const [showSettings, setShowSettings] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,11 +49,6 @@ export function Navbar({
 
   useEffect(() => {
     setIsAuthenticated(Boolean(getStoredToken()));
-    apiClient.checkHealth().then(setApiStatus);
-    const interval = setInterval(() => {
-      apiClient.checkHealth().then(setApiStatus);
-    }, 15000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -210,23 +202,8 @@ export function Navbar({
               })}
             </nav>
 
-            {/* Right actions: Role Switcher & API Status */}
-            <div className="flex items-center gap-3">
-              {/* API Connection Indicator */}
-              <div
-                title={apiStatus.message}
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border bg-slate-900/80 border-slate-800"
-              >
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    apiStatus.online ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
-                  }`}
-                />
-                <span className="text-slate-300">
-                  {apiStatus.online ? "Backend Online" : "Backend Offline"}
-                </span>
-              </div>
-
+            {/* Right actions: Role Switcher & Account */}
+            <div className="flex items-center gap-2">
               {/* Role Switcher Pill */}
               <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/90 border border-slate-800">
                 <span className="text-[10px] font-bold uppercase text-slate-500 pl-2 pr-1 hidden xl:inline">
@@ -248,10 +225,15 @@ export function Navbar({
               {/* Settings / Auth Button */}
               <button
                 onClick={() => setShowSettings(true)}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-slate-800 cursor-pointer"
-                title="Sign in or manage your session"
+                className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-colors cursor-pointer ${
+                  isAuthenticated
+                    ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20"
+                    : "border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+                title={isAuthenticated ? "Manage account" : "Sign in"}
+                aria-label={isAuthenticated ? "Manage account" : "Sign in"}
               >
-                <SlidersIcon className="w-4 h-4" />
+                <UserIcon className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -285,7 +267,7 @@ export function Navbar({
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <SlidersIcon className="w-5 h-5 text-indigo-400" />
-                <span>Backend Connection & Authentication</span>
+                <span>Account & Authentication</span>
               </h3>
               <button
                 onClick={() => setShowSettings(false)}
