@@ -52,6 +52,8 @@ export function ContentStudio({
   const [rewriteMode, setRewriteMode] = useState<RewriteMode>("minimal_correction");
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  const canCreate = userRole === "ADMIN" || userRole === "CREATOR";
+
   // Sync state when active content selection or contents list changes
   useEffect(() => {
     if (contents.length > 0) {
@@ -235,14 +237,26 @@ export function ContentStudio({
             </select>
           )}
 
-          <button
-            onClick={handleCreateNew}
-            className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 cursor-pointer whitespace-nowrap"
-          >
-            + New Copy
-          </button>
+          {canCreate && (
+            <button
+              onClick={handleCreateNew}
+              className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 cursor-pointer whitespace-nowrap"
+            >
+              + New Copy
+            </button>
+          )}
         </div>
       </div>
+
+      {!canCreate && (
+        <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 text-xs flex items-center gap-2">
+          <AlertTriangleIcon className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>
+            You are viewing in <strong className="text-slate-200">{userRole}</strong> mode.
+            Creating and editing marketing copy requires <strong>ADMIN</strong> or <strong>CREATOR</strong> role.
+          </span>
+        </div>
+      )}
 
       {/* Notification Banner */}
       {notification && (

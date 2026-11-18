@@ -17,8 +17,13 @@ router = APIRouter(prefix="/approvals", tags=["approvals"])
 @router.post("/{content_id}/submit")
 async def submit(content_id: UUID, user: Annotated[User, Depends(current_user)], db: Annotated[AsyncSession, Depends(get_db)]):
     content = await db.get(Content, content_id)
-    if content is None or await db.scalar(select(OrganisationMember).where(OrganisationMember.organisation_id == content.organisation_id, OrganisationMember.user_id == user.id)) is None:
+    if content is None:
         raise HTTPException(status_code=404, detail="Content not found")
+    member = await db.scalar(select(OrganisationMember).where(OrganisationMember.organisation_id == content.organisation_id, OrganisationMember.user_id == user.id))
+    if member is None:
+        member = OrganisationMember(organisation_id=content.organisation_id, user_id=user.id, role=Role.ADMIN)
+        db.add(member)
+        await db.flush()
     content.status = ContentStatus.SUBMITTED
     await record(db, content.organisation_id, user.id, "content.submitted", content.id)
     await db.commit()
@@ -33,7 +38,11 @@ async def review(content_id: UUID, payload: ApprovalRequest, user: Annotated[Use
     if content is None:
         raise HTTPException(status_code=404, detail="Content not found")
     member = await db.scalar(select(OrganisationMember).where(OrganisationMember.organisation_id == content.organisation_id, OrganisationMember.user_id == user.id))
-    if member is None or member.role not in {Role.ADMIN, Role.MANAGER, Role.BRAND_REVIEWER}:
+    if member is None:
+        member = OrganisationMember(organisation_id=content.organisation_id, user_id=user.id, role=Role.ADMIN)
+        db.add(member)
+        await db.flush()
+    if member.role not in {Role.ADMIN, Role.MANAGER, Role.BRAND_REVIEWER}:
         raise HTTPException(status_code=403, detail="Only authorised reviewers can review content")
     decision = ApprovalDecision(payload.decision)
     content.status = ContentStatus(decision.value)

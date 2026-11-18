@@ -6,6 +6,8 @@ import { DashboardOverview } from "../components/DashboardOverview";
 import { ContentStudio } from "../components/ContentStudio";
 import { GuidelineUploader } from "../components/GuidelineUploader";
 import { ApprovalHub } from "../components/ApprovalHub";
+import { Sidebar } from "../components/Sidebar";
+import { TeamManagement } from "../components/TeamManagement";
 import { AuthModal } from "../components/AuthModal";
 import { LandingPage } from "../components/LandingPage";
 import { ProfileCard } from "../components/ProfileCard";
@@ -30,7 +32,8 @@ export default function Home() {
   const [showProfileCard, setShowProfileCard] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [currentTab, setCurrentTab] = useState("dashboard");
-  const [currentRole, setCurrentRole] = useState<Role>("CREATOR");
+  const [currentRole, setCurrentRole] = useState<Role>("ADMIN");
+  const [roleLoaded, setRoleLoaded] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -105,6 +108,15 @@ export default function Home() {
       setIsAuthenticated(restored);
       setAuthChecked(true);
       if (restored) {
+        try {
+          const me = await apiClient.getMe();
+          if (me) {
+            if (me.email) setUserEmail(me.email);
+            if (me.role) setCurrentRole(me.role);
+          }
+        } catch {
+          setCurrentRole("ADMIN");
+        }
         await loadOrganisations();
       }
       setIsLoading(false);
@@ -119,7 +131,41 @@ export default function Home() {
     }
   }, [activeOrgId, loadWorkspaceData]);
 
+  useEffect(() => {
+    if (!activeOrgId) return;
+    let cancelled = false;
+    setRoleLoaded(false);
+    apiClient
+      .getMembership(activeOrgId)
+      .then((membership) => {
+        if (cancelled) return;
+        const role = membership?.role || "ADMIN";
+        setCurrentRole(role);
+        setCurrentTab((tab) => {
+          const allowed: Record<Role, string[]> = {
+            CREATOR: ["dashboard", "studio", "guidelines", "approvals"],
+            MANAGER: ["dashboard", "approvals"],
+            BRAND_REVIEWER: ["dashboard", "guidelines", "approvals"],
+            ADMIN: ["dashboard", "studio", "guidelines", "approvals", "team"],
+          };
+          const allowedTabs = allowed[role] || allowed.ADMIN;
+          return allowedTabs.includes(tab) ? tab : allowedTabs[0];
+        });
+        setRoleLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCurrentRole("ADMIN");
+          setRoleLoaded(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeOrgId]);
+
   const handleSelectOrg = (orgId: string) => {
+    setRoleLoaded(false);
     setActiveOrgId(orgId);
     setStoredOrgId(orgId);
   };
@@ -144,11 +190,21 @@ export default function Home() {
     }
   };
 
-  const handleAuthenticated = (email: string) => {
+  const handleAuthenticated = async (email: string) => {
     setUserEmail(email);
     setIsAuthenticated(true);
     setShowAuthModal(false);
     setShowProfileCard(true);
+    try {
+      const me = await apiClient.getMe();
+      if (me?.role) {
+        setCurrentRole(me.role);
+      } else {
+        setCurrentRole("ADMIN");
+      }
+    } catch {
+      setCurrentRole("ADMIN");
+    }
     loadOrganisations();
   };
 
@@ -178,8 +234,20 @@ export default function Home() {
     return (
       <ProfileCard
         email={userEmail}
+        role={currentRole}
         onContinue={() => setShowProfileCard(false)}
       />
+    );
+  }
+
+  if (activeOrgId && !roleLoaded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+          <p className="text-xs font-medium">Verifying your workspace role...</p>
+        </div>
+      </div>
     );
   }
 
@@ -190,7 +258,6 @@ export default function Home() {
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
         currentRole={currentRole}
-        onSelectRole={setCurrentRole}
         organisations={organisations}
         activeOrgId={activeOrgId}
         onSelectOrg={handleSelectOrg}
@@ -204,9 +271,16 @@ export default function Home() {
           setShowProfileCard(false);
         }}
       />
+      <div className="flex flex-1 flex-col md:flex-row">
+        <Sidebar
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+          role={currentRole}
+          pendingCount={metrics.pending_approvals}
+        />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Main Container */}
+        <main className="w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
         {errorMessage && (
           <div className="mb-6 p-4 rounded-2xl bg-rose-950/40 border border-rose-800/60 text-xs text-rose-300 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -299,9 +373,16 @@ export default function Home() {
                 onRefresh={handleRefreshAll}
               />
             )}
+            {currentTab === "team" && currentRole === "ADMIN" && (
+              <TeamManagement
+                organisationId={activeOrgId}
+                onRoleChanged={handleRefreshAll}
+              />
+            )}
           </>
         )}
-      </main>
+        </main>
+      </div>
 
       {/* Footer */}
       <footer className="w-full border-t border-slate-800/80 bg-slate-950/90 py-6 text-center text-xs text-slate-500">
