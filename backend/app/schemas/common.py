@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -36,6 +36,21 @@ class OrganisationMemberResponse(ORMModel):
     email: str
     name: Optional[str] = None
     role: str
+
+
+class UserProfileResponse(ORMModel):
+    id: UUID
+    email: str
+    name: Optional[str] = None
+    role: str = "ADMIN"
+    roles: list[dict[str, Any]] = []
+    created_at: Optional[datetime] = None
+
+
+class RoleResponse(BaseModel):
+    role: str = "ADMIN"
+    email: str
+    roles: list[dict[str, Any]] = []
 
 
 class ContentCreate(BaseModel):

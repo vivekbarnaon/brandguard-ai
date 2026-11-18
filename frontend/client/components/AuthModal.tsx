@@ -11,6 +11,7 @@ interface AuthModalProps {
 
 export function AuthModal({ onClose, onAuthenticated }: AuthModalProps) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -19,6 +20,11 @@ export function AuthModal({ onClose, onAuthenticated }: AuthModalProps) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (mode === "signup" && !name.trim()) {
+      setErrorMessage("Enter your name.");
+      return;
+    }
+
     if (!email.trim() || !password) {
       setErrorMessage("Enter your email and password.");
       return;
@@ -32,7 +38,7 @@ export function AuthModal({ onClose, onAuthenticated }: AuthModalProps) {
         await apiClient.signIn(email.trim(), password);
         onAuthenticated(email.trim());
       } else {
-        const signedIn = await apiClient.signUp(email.trim(), password);
+        const signedIn = await apiClient.signUp(email.trim(), password, name.trim());
         if (signedIn) {
           onAuthenticated(email.trim());
         } else {
@@ -73,6 +79,19 @@ export function AuthModal({ onClose, onAuthenticated }: AuthModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+          {mode === "signup" && (
+            <label className="block text-xs font-semibold text-slate-300">
+              Full name
+              <input
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Jane Doe"
+                autoComplete="name"
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-400"
+              />
+            </label>
+          )}
           <label className="block text-xs font-semibold text-slate-300">
             Work email
             <input
@@ -91,7 +110,7 @@ export function AuthModal({ onClose, onAuthenticated }: AuthModalProps) {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Your password"
-              autoComplete="current-password"
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
               className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-400"
             />
           </label>

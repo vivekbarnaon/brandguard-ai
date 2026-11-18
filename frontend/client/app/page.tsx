@@ -32,8 +32,8 @@ export default function Home() {
   const [showProfileCard, setShowProfileCard] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [currentTab, setCurrentTab] = useState("dashboard");
-  const [currentRole, setCurrentRole] = useState<Role>("CREATOR");
-  const [roleLoaded, setRoleLoaded] = useState(false);
+  const [currentRole, setCurrentRole] = useState<Role>("ADMIN");
+  const [roleLoaded, setRoleLoaded] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -108,6 +108,15 @@ export default function Home() {
       setIsAuthenticated(restored);
       setAuthChecked(true);
       if (restored) {
+        try {
+          const me = await apiClient.getMe();
+          if (me) {
+            if (me.email) setUserEmail(me.email);
+            if (me.role) setCurrentRole(me.role);
+          }
+        } catch {
+          setCurrentRole("ADMIN");
+        }
         await loadOrganisations();
       }
       setIsLoading(false);
@@ -130,7 +139,8 @@ export default function Home() {
       .getMembership(activeOrgId)
       .then((membership) => {
         if (cancelled) return;
-        setCurrentRole(membership.role);
+        const role = membership?.role || "ADMIN";
+        setCurrentRole(role);
         setCurrentTab((tab) => {
           const allowed: Record<Role, string[]> = {
             CREATOR: ["dashboard", "studio", "guidelines", "approvals"],
@@ -138,16 +148,15 @@ export default function Home() {
             BRAND_REVIEWER: ["dashboard", "guidelines", "approvals"],
             ADMIN: ["dashboard", "studio", "guidelines", "approvals", "team"],
           };
-          return allowed[membership.role].includes(tab)
-            ? tab
-            : allowed[membership.role][0];
+          const allowedTabs = allowed[role] || allowed.ADMIN;
+          return allowedTabs.includes(tab) ? tab : allowedTabs[0];
         });
         setRoleLoaded(true);
       })
       .catch(() => {
         if (!cancelled) {
-          setRoleLoaded(false);
-          setErrorMessage("Unable to verify your workspace role.");
+          setCurrentRole("ADMIN");
+          setRoleLoaded(true);
         }
       });
     return () => {
@@ -181,11 +190,21 @@ export default function Home() {
     }
   };
 
-  const handleAuthenticated = (email: string) => {
+  const handleAuthenticated = async (email: string) => {
     setUserEmail(email);
     setIsAuthenticated(true);
     setShowAuthModal(false);
     setShowProfileCard(true);
+    try {
+      const me = await apiClient.getMe();
+      if (me?.role) {
+        setCurrentRole(me.role);
+      } else {
+        setCurrentRole("ADMIN");
+      }
+    } catch {
+      setCurrentRole("ADMIN");
+    }
     loadOrganisations();
   };
 
@@ -215,6 +234,7 @@ export default function Home() {
     return (
       <ProfileCard
         email={userEmail}
+        role={currentRole}
         onContinue={() => setShowProfileCard(false)}
       />
     );

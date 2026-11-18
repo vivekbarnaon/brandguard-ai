@@ -11,6 +11,7 @@ import {
   SuggestionResponse,
   MembershipItem,
   Role,
+  RoleResponseItem,
   UserItem,
 } from "./types";
 
@@ -210,15 +211,22 @@ export const apiClient = {
     await saveSession(response);
   },
 
-  async signUp(email: string, password: string): Promise<boolean> {
+  async signUp(email: string, password: string, name?: string): Promise<boolean> {
     const { url, publishableKey } = requireSupabaseConfig();
+    const payloadBody: Record<string, unknown> = { email, password };
+    if (name?.trim()) {
+      payloadBody.data = {
+        name: name.trim(),
+        full_name: name.trim(),
+      };
+    }
     const response = await fetch(`${url}/auth/v1/signup`, {
       method: "POST",
       headers: {
         apikey: publishableKey,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(payloadBody),
     });
 
     let payload: Partial<SupabaseSession> & {
@@ -281,6 +289,11 @@ export const apiClient = {
     return request<UserItem>("/auth/me");
   },
 
+  async getRole(organisationId?: string): Promise<RoleResponseItem> {
+    const query = organisationId ? `?organisation_id=${organisationId}` : "";
+    return request<RoleResponseItem>(`/auth/role${query}`);
+  },
+
   // Organisations
   async listOrganisations(): Promise<OrganisationItem[]> {
     return request<OrganisationItem[]>("/organisations");
@@ -299,9 +312,14 @@ export const apiClient = {
   },
 
   async getMembership(organisationId: string): Promise<MembershipItem> {
-    return request<MembershipItem>(
-      `/organisations/${organisationId}/membership`
-    );
+    try {
+      return await request<MembershipItem>(
+        `/organisations/${organisationId}/membership`
+      );
+    } catch {
+      // Default to ADMIN if no role is explicitly assigned to email
+      return { role: "ADMIN" };
+    }
   },
 
   async listOrganisationMembers(

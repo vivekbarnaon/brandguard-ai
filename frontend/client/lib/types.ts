@@ -32,7 +32,15 @@ export interface UserItem {
   id: string;
   email: string;
   name?: string | null;
-  created_at: string;
+  role: Role;
+  roles?: Array<{ organisation_id: string; role: Role }>;
+  created_at?: string;
+}
+
+export interface RoleResponseItem {
+  role: Role;
+  email: string;
+  roles?: Array<{ organisation_id: string; role: Role }>;
 }
 
 export interface OrganisationItem {
