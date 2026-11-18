@@ -1,4 +1,5 @@
 import httpx
+from urllib.parse import quote
 
 from app.core.config import get_settings
 
@@ -19,10 +20,19 @@ async def upload_private(path: str, data: bytes, content_type: str) -> None:
 
 async def delete_private(path: str) -> None:
     settings = get_settings()
-    url = f"{settings.supabase_url.rstrip('/')}/storage/v1/object/remove/{settings.storage_bucket}"
-    headers = {"Authorization": f"Bearer {settings.supabase_secret_key.get_secret_value()}", "apikey": settings.supabase_secret_key.get_secret_value()}
+    encoded_path = quote(path.strip("/"), safe="/")
+    url = (
+        f"{settings.supabase_url.rstrip('/')}/storage/v1/object/"
+        f"{settings.storage_bucket}/{encoded_path}"
+    )
+    headers = {
+        "Authorization": f"Bearer {settings.supabase_secret_key.get_secret_value()}",
+        "apikey": settings.supabase_secret_key.get_secret_value(),
+    }
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(url, json={"prefixes": [path]}, headers=headers)
+        response = await client.delete(url, headers=headers)
+    if response.status_code == 404:
+        return
     response.raise_for_status()
 
 

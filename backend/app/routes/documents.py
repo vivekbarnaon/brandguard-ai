@@ -119,6 +119,17 @@ async def ingest_evidence(document_id: UUID, payload: EvidenceBatch, db: Annotat
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_document(document_id: UUID, user: Annotated[User, Depends(current_user)], db: Annotated[AsyncSession, Depends(get_db)]):
     document = await get_document(document_id, user, db)
+    member = await db.scalar(
+        select(OrganisationMember).where(
+            OrganisationMember.organisation_id == document.organisation_id,
+            OrganisationMember.user_id == user.id,
+        )
+    )
+    if member is None or member.role not in {Role.ADMIN, Role.CREATOR}:
+        raise HTTPException(
+            status_code=403,
+            detail="Only organisation admins and creators can delete documents",
+        )
     await delete_private(document.storage_path)
     await db.delete(document)
     await db.commit()
