@@ -41,6 +41,18 @@ export interface OrganisationItem {
   created_at: string;
 }
 
+export interface MembershipItem {
+  role: Role;
+}
+
+export interface OrganisationMemberItem {
+  id: string;
+  user_id: string;
+  email: string;
+  name?: string | null;
+  role: Role;
+}
+
 export interface EvidenceReference {
   chunk_id?: string;
   document_id?: string;

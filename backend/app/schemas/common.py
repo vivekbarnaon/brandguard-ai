@@ -21,6 +21,23 @@ class OrganisationResponse(ORMModel):
     created_at: datetime
 
 
+class OrganisationMemberCreate(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    role: str
+
+
+class OrganisationMemberRoleUpdate(BaseModel):
+    role: str
+
+
+class OrganisationMemberResponse(ORMModel):
+    id: UUID
+    user_id: UUID
+    email: str
+    name: Optional[str] = None
+    role: str
+
+
 class ContentCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     body: str = Field(min_length=1)

@@ -18,7 +18,6 @@ interface NavbarProps {
   currentTab: string;
   onSelectTab: (tab: string) => void;
   currentRole: Role;
-  onSelectRole: (role: Role) => void;
   organisations: OrganisationItem[];
   activeOrgId: string;
   onSelectOrg: (orgId: string) => void;
@@ -33,7 +32,6 @@ export function Navbar({
   currentTab,
   onSelectTab,
   currentRole,
-  onSelectRole,
   organisations,
   activeOrgId,
   onSelectOrg,
@@ -178,57 +176,11 @@ export function Navbar({
               </div>
             </div>
 
-            {/* Nav Tabs */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onSelectTab(item.id)}
-                    className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      isActive
-                        ? "text-white bg-slate-800/90 shadow-sm border border-slate-700/60"
-                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60"
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 ${isActive ? "text-indigo-400" : "text-slate-400"}`} />
-                    <span>{item.label}</span>
-                    {item.badge !== null && (
-                      <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        {item.badge}
-                      </span>
-                    )}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full" />
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Right actions: Role Switcher & Account */}
+            {/* Right actions: Account */}
             <div className="flex items-center gap-2">
-              {/* Role Switcher Pill */}
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/90 border border-slate-800">
-                <span className="text-[10px] font-bold uppercase text-slate-500 pl-2 pr-1 hidden xl:inline">
-                  Role:
-                </span>
-                <select
-                  value={currentRole}
-                  onChange={(e) => onSelectRole(e.target.value as Role)}
-                  className="bg-transparent text-xs font-semibold text-indigo-300 focus:outline-none cursor-pointer py-1 px-2 rounded-lg hover:bg-slate-800/80 transition-colors"
-                >
-                  {roles.map((r) => (
-                    <option key={r.role} value={r.role} className="bg-slate-900 text-slate-100">
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="hidden rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-indigo-300 sm:block">
+                {roles.find((role) => role.role === currentRole)?.label}
               </div>
-
-              {/* Settings / Auth Button */}
               <button
                 onClick={() => setShowProfile(true)}
                 className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-colors cursor-pointer ${
@@ -244,25 +196,6 @@ export function Navbar({
             </div>
           </div>
 
-          {/* Mobile Navigation Bar */}
-          <div className="md:hidden flex items-center justify-around py-2 border-t border-slate-800/60 overflow-x-auto">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onSelectTab(item.id)}
-                  className={`flex flex-col items-center gap-1 px-2 py-1 text-[11px] font-medium transition-all ${
-                    isActive ? "text-indigo-400" : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
         </div>
       </header>
 

@@ -6,8 +6,11 @@ import {
   DashboardMetrics,
   DocumentItem,
   OrganisationItem,
+  OrganisationMemberItem,
   RewriteMode,
   SuggestionResponse,
+  MembershipItem,
+  Role,
   UserItem,
 } from "./types";
 
@@ -293,6 +296,50 @@ export const apiClient = {
 
   async getOrganisation(organisationId: string): Promise<OrganisationItem> {
     return request<OrganisationItem>(`/organisations/${organisationId}`);
+  },
+
+  async getMembership(organisationId: string): Promise<MembershipItem> {
+    return request<MembershipItem>(
+      `/organisations/${organisationId}/membership`
+    );
+  },
+
+  async listOrganisationMembers(
+    organisationId: string
+  ): Promise<OrganisationMemberItem[]> {
+    return request<OrganisationMemberItem[]>(
+      `/organisations/${organisationId}/members`
+    );
+  },
+
+  async addOrganisationMember(
+    organisationId: string,
+    email: string,
+    role: Role
+  ): Promise<OrganisationMemberItem> {
+    return request<OrganisationMemberItem>(
+      `/organisations/${organisationId}/members`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role }),
+      }
+    );
+  },
+
+  async updateOrganisationMemberRole(
+    organisationId: string,
+    memberId: string,
+    role: Role
+  ): Promise<OrganisationMemberItem> {
+    return request<OrganisationMemberItem>(
+      `/organisations/${organisationId}/members/${memberId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      }
+    );
   },
 
   // Documents
