@@ -11,6 +11,7 @@ import { TeamManagement } from "../components/TeamManagement";
 import { AuthModal } from "../components/AuthModal";
 import { LandingPage } from "../components/LandingPage";
 import { ProfileCard } from "../components/ProfileCard";
+import { DemoNoticeModal } from "../components/DemoNoticeModal";
 import {
   ContentItem,
   DashboardMetrics,
@@ -226,6 +227,7 @@ export default function Home() {
             onAuthenticated={handleAuthenticated}
           />
         )}
+        <DemoNoticeModal onAction={() => setShowAuthModal(false)} />
       </>
     );
   }
@@ -392,6 +394,9 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      {/* Demo Notice Modal */}
+      <DemoNoticeModal onAction={() => setCurrentTab("dashboard")} />
     </div>
   );
 }
